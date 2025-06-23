@@ -148,9 +148,14 @@ class BasePatch:
 
         for name in tqdm(tmp_mapping, disable=not verbose):
             linear_tag = name_to_linear_tag(name)
-            patch_param = (
-                patch_params[linear_tag] if (linear_tag in patch_params) else None
-            )
+
+            if name in patch_params:
+                patch_param = patch_params[name]
+            elif linear_tag in patch_params:
+                patch_param = patch_params[linear_tag]
+            else:
+                patch_param = None
+            
             setattr(
                 find_parent(model, name),
                 name.split(".")[-1],
@@ -279,7 +284,7 @@ class BaseHQQModel:
         cls.setup_model(model)
 
         # Use the same quantization config for all linear layers. Use None to skip quantizing a specfic layer.
-        if True in [(key in model.linear_tags) for key in quant_config.keys()]:
+        if isinstance(quant_config, dict):
             # If the user doesn't specify a key from get_linear_tags, the layer is not quantized via (key, None)
             patch_params = {key: None for key in model.linear_tags}
             patch_params.update(quant_config)
